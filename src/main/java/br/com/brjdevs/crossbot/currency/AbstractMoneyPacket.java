@@ -1,6 +1,6 @@
 package br.com.brjdevs.crossbot.currency;
 
-abstract class AbstractMoneyPacket {
+public abstract class AbstractMoneyPacket {
 	public final long userid;
 	public final long requestId;
 

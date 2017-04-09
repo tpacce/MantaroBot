@@ -18,7 +18,10 @@ public class Config {
 	public String consoleChannel = "266231083341840385";
 	public String crossBotHost;
 	public int crossBotPort;
+	public String crossBotPassword;
 	public boolean crossBotServer = false;
+	public boolean crossBotSSL = true;
+	public int crossBotThreads = 15;
 	public String dbDb = "mantaro";
 	public String dbHost = "localhost";
 	public int dbPort = 28015;

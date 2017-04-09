@@ -28,6 +28,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class CrossBotDataManager implements Closeable, DataManager<Consumer<Object>> {
+    public static final int DEFAULT_TIMEOUT = 3000;
+
 	public static class Builder {
 		public enum Type {
 			CLIENT, SERVER
@@ -300,6 +302,10 @@ public class CrossBotDataManager implements Closeable, DataManager<Consumer<Obje
 		}
 	}
 
+	public void setResponse(long requestId, Object response) {
+	    map.put(requestId, response);
+    }
+
     public CrossBotAction<JSONObject> sendJson(JSONObject obj, long responseTimeout) {
         return CrossBotAction.of(actionsExecutor, ()->{
             long timeout = responseTimeout;
@@ -318,7 +324,42 @@ public class CrossBotDataManager implements Closeable, DataManager<Consumer<Obje
     }
 
     public CrossBotAction<JSONObject> sendJson(JSONObject obj) {
-        return sendJson(obj, 3000);
+        return sendJson(obj, DEFAULT_TIMEOUT);
+    }
+
+    public CrossBotAction<Long> getMoney(long userid, long responseTimeout) {
+        return CrossBotAction.of(actionsExecutor, ()->{
+            long timeout = responseTimeout;
+            long id = nextRequestId.getAndIncrement();
+            send.accept(new GetMoneyPacket(userid, id));
+            while(!map.containsKey(id)) {
+                try {
+                    if(timeout-- <= 0) UnsafeUtils.throwException(new TimeoutException("No response received in " + responseTimeout + " ms"));
+                    Thread.sleep(1);
+                } catch(InterruptedException e) {
+                    UnsafeUtils.throwException(e);
+                }
+            }
+            return (Long)map.remove(id);
+        });
+    }
+
+    public CrossBotAction<Long> getMoney(long userid) {
+        return getMoney(userid, DEFAULT_TIMEOUT);
+    }
+
+    public CrossBotAction<Void> setMoney(long userid, long money) {
+        return CrossBotAction.of(actionsExecutor, ()->{
+            send.accept(new SetMoneyPacket(userid, money, nextRequestId.getAndIncrement()));
+            return null;
+        });
+    }
+
+    public CrossBotAction<Void> updateMoney(long userid, long delta) {
+	    return CrossBotAction.of(actionsExecutor, ()->{
+	        send.accept(new UpdateMoneyPacket(userid, delta, nextRequestId.getAndIncrement()));
+	        return null;
+        });
     }
 
 	public boolean isClosed() {
