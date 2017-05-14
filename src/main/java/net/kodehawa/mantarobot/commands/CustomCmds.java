@@ -12,9 +12,9 @@ import net.kodehawa.mantarobot.commands.custom.EmbedJSON;
 import net.kodehawa.mantarobot.core.CommandProcessor;
 import net.kodehawa.mantarobot.core.listeners.operations.InteractiveOperations;
 import net.kodehawa.mantarobot.data.MantaroData;
-import net.kodehawa.mantarobot.data.entities.CustomCommand;
-import net.kodehawa.mantarobot.modules.CommandRegistry;
+import net.kodehawa.mantarobot.data.oldentities.CustomCommand;
 import net.kodehawa.mantarobot.modules.Command;
+import net.kodehawa.mantarobot.modules.CommandRegistry;
 import net.kodehawa.mantarobot.modules.Module;
 import net.kodehawa.mantarobot.modules.commands.CommandPermission;
 import net.kodehawa.mantarobot.modules.commands.SimpleCommand;
@@ -262,7 +262,7 @@ public class CustomCmds {
 						return;
 					}
 
-					CustomCommand custom = db().getCustomCommand(event.getGuild(), cmd);
+					CustomCommand custom = db().getCustomCommand(event, cmd);
 					if (custom == null) {
 						event.getChannel().sendMessage(EmoteReference.ERROR2 + "There's no Custom Command ``" + cmd + "`` in this Guild.").queue();
 						return;
@@ -289,7 +289,7 @@ public class CustomCmds {
 						return;
 					}
 
-					CustomCommand custom = db().getCustomCommand(event.getGuild(), cmd);
+					CustomCommand custom = db().getCustomCommand(event, cmd);
 					if (custom == null) {
 						event.getChannel().sendMessage(EmoteReference.ERROR2 + "There's no Custom Command ``" + cmd + "`` in this Guild.").queue();
 						return;
@@ -372,7 +372,7 @@ public class CustomCmds {
 						return;
 					}
 
-					CustomCommand oldCustom = db().getCustomCommand(event.getGuild(), cmd);
+					CustomCommand oldCustom = db().getCustomCommand(event, cmd);
 
 					if (oldCustom == null) {
 						event.getChannel().sendMessage(EmoteReference.ERROR2 + "There's no Custom Command ``" + cmd + "`` in this Guild.").queue();

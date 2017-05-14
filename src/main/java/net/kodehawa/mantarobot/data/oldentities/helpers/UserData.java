@@ -1,4 +1,4 @@
-package net.kodehawa.mantarobot.data.entities.helpers;
+package net.kodehawa.mantarobot.data.oldentities.helpers;
 
 import lombok.Data;
 

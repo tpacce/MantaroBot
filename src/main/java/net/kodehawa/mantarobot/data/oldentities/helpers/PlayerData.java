@@ -1,4 +1,4 @@
-package net.kodehawa.mantarobot.data.entities.helpers;
+package net.kodehawa.mantarobot.data.oldentities.helpers;
 
 import lombok.Data;
 
@@ -17,6 +17,16 @@ public class PlayerData {
 	private String marriedWith = null;
 
 	@Transient
+	public String anniversary() {
+		if (getMarriedSince() == null) return null;
+		SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+		Calendar cal = new GregorianCalendar();
+		cal.setTime(new Date(getMarriedSince()));
+		cal.add(Calendar.YEAR, 1);
+		return sdf.format(cal.getTime());
+	}
+
+	@Transient
 	public boolean isMarried() {
 		return marriedWith != null;
 	}
@@ -27,15 +37,5 @@ public class PlayerData {
 		SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
 		final Date date = new Date(getMarriedSince());
 		return sdf.format(date);
-	}
-
-	@Transient
-	public String anniversary(){
-		if(getMarriedSince() == null) return null;
-		SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
-		Calendar cal = new GregorianCalendar();
-		cal.setTime(new Date(getMarriedSince()));
-		cal.add(Calendar.YEAR, 1);
-		return sdf.format(cal.getTime());
 	}
 }

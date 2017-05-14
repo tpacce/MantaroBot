@@ -1,4 +1,4 @@
-package net.kodehawa.mantarobot.data.entities;
+package net.kodehawa.mantarobot.data.oldentities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
@@ -7,7 +7,7 @@ import lombok.ToString;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Guild;
 import net.kodehawa.mantarobot.data.db.ManagedObject;
-import net.kodehawa.mantarobot.data.entities.helpers.GuildData;
+import net.kodehawa.mantarobot.data.oldentities.helpers.GuildData;
 
 import java.beans.ConstructorProperties;
 

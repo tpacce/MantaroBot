@@ -9,7 +9,7 @@ import net.kodehawa.mantarobot.commands.game.ImageGuess;
 import net.kodehawa.mantarobot.commands.game.Pokemon;
 import net.kodehawa.mantarobot.commands.game.Trivia;
 import net.kodehawa.mantarobot.commands.interaction.Lobby;
-import net.kodehawa.mantarobot.data.entities.Player;
+import net.kodehawa.mantarobot.data.oldentities.Player;
 
 import java.util.HashMap;
 import java.util.LinkedList;

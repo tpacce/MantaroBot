@@ -1,4 +1,4 @@
-package net.kodehawa.mantarobot.data.entities.helpers;
+package net.kodehawa.mantarobot.data.oldentities.helpers;
 
 import lombok.Data;
 
@@ -28,6 +28,6 @@ public class GuildData {
 	private Long musicSongDurationLimit = null;
 	private String mutedRole = null;
 	private Long quoteLastId = 0L;
-	private boolean rpgLocalMode = false;
 	private boolean rpgDevaluation = true;
+	private boolean rpgLocalMode = false;
 }

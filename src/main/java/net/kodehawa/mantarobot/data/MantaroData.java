@@ -1,9 +1,8 @@
 package net.kodehawa.mantarobot.data;
 
-import com.google.gson.annotations.Since;
 import com.rethinkdb.net.Connection;
 import net.kodehawa.mantarobot.MantaroBot;
-import net.kodehawa.mantarobot.data.db.ManagedDatabase;
+import net.kodehawa.mantarobot.data.olddb.ManagedDatabase;
 import net.kodehawa.mantarobot.utils.data.ConnectionWatcherDataManager;
 import net.kodehawa.mantarobot.utils.data.GsonDataManager;
 

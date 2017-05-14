@@ -2,20 +2,18 @@ package net.kodehawa.mantarobot.commands;
 
 import br.com.brjdevs.java.utils.strings.StringUtils;
 import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.kodehawa.lib.google.Crawler;
-import net.kodehawa.mantarobot.MantaroBot;
 import net.kodehawa.mantarobot.commands.currency.TextChannelGround;
 import net.kodehawa.mantarobot.commands.utils.UrbanData;
 import net.kodehawa.mantarobot.commands.utils.WeatherData;
 import net.kodehawa.mantarobot.commands.utils.YoutubeMp3Info;
 import net.kodehawa.mantarobot.data.MantaroData;
-import net.kodehawa.mantarobot.data.entities.DBUser;
+import net.kodehawa.mantarobot.data.oldentities.DBUser;
 import net.kodehawa.mantarobot.modules.Command;
 import net.kodehawa.mantarobot.modules.CommandRegistry;
 import net.kodehawa.mantarobot.modules.Module;
@@ -28,7 +26,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import us.monoid.web.Resty;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -37,7 +35,6 @@ import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.List;
 
 import static br.com.brjdevs.java.utils.extensions.CollectionUtils.random;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -168,6 +165,86 @@ public class UtilsCmds {
 				return baseEmbed(event, "Choose Command")
 					.setDescription("**Choose between 1 or more things\n" +
 						"It accepts all parameters it gives (Also in quotes to account for spaces if used) and chooses a random one.**")
+					.build();
+			}
+		});
+	}
+
+	@Command
+	public static void dictionary(CommandRegistry registry) {
+		registry.register("dictionary", new SimpleCommand(Category.UTILS) {
+			@Override
+			protected void call(GuildMessageReceivedEvent event, String content, String[] args) {
+				if (args.length == 0) {
+					event.getChannel().sendMessage(EmoteReference.ERROR + "You need to specify a word.").queue();
+					return;
+				}
+
+				String word = content;
+
+				JSONObject main;
+				String definition, part_of_speech, headword, example;
+
+				try {
+					main = Unirest.get("http://api.pearson.com/v2/dictionaries/laes/entries?headword=" + word).asJson()
+						.getBody().getObject();
+					JSONArray results = main.getJSONArray("results");
+					JSONObject result = results.getJSONObject(0);
+					JSONArray senses = result.getJSONArray("senses");
+
+					headword = result.getString("headword");
+
+					if (result.has("part_of_speech")) part_of_speech = result.getString("part_of_speech");
+					else part_of_speech = "Not found.";
+
+					if (senses.getJSONObject(0).get("definition") instanceof JSONArray)
+						definition = senses.getJSONObject(0).getJSONArray("definition").getString(0);
+					else
+						definition = senses.getJSONObject(0).getString("definition");
+
+					try {
+						if (senses.getJSONObject(0).getJSONArray("translations").getJSONObject(0).get(
+							"example") instanceof JSONArray) {
+							example = senses.getJSONObject(0)
+								.getJSONArray("translations")
+								.getJSONObject(0)
+								.getJSONArray("example")
+								.getJSONObject(0)
+								.getString("text");
+						} else {
+							example = senses.getJSONObject(0)
+								.getJSONArray("translations")
+								.getJSONObject(0)
+								.getJSONObject("example")
+								.getString("text");
+						}
+					} catch (Exception e) {
+						example = "Not found";
+					}
+
+				} catch (Exception e) {
+					event.getChannel().sendMessage(EmoteReference.ERROR + "No results.").queue();
+					return;
+				}
+
+				EmbedBuilder eb = new EmbedBuilder();
+				eb.setAuthor("Definition for " + word, null, event.getAuthor().getAvatarUrl())
+					.setThumbnail(
+						"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Wikt_dynamic_dictionary_logo.svg/1000px-Wikt_dynamic_dictionary_logo.svg.png")
+					.addField("Definition", "**" + definition + "**", false)
+					.addField("Example", "**" + example + "**", false)
+					.setDescription(
+						String.format("**Part of speech:** `%s`\n" + "**Headword:** `%s`\n", part_of_speech, headword));
+
+				event.getChannel().sendMessage(eb.build()).queue();
+			}
+
+			@Override
+			public MessageEmbed help(GuildMessageReceivedEvent event) {
+				return helpEmbed(event, "Dictionary command")
+					.setDescription("**Looks up a word in the dictionary.**")
+					.addField("Usage", "`~>dictionary <word>` - Searches a word in the dictionary.", false)
+					.addField("Parameters", "`word` - The word to look for", false)
 					.build();
 			}
 		});
@@ -498,84 +575,6 @@ public class UtilsCmds {
 					.addField("Usage", "`~>ytmp3 <youtube link>`", true)
 					.addField("Parameters", "`youtube link` - **The link of the video to convert to MP3**", true)
 					.build();
-			}
-		});
-	}
-
-	@Command
-	public static void dictionary(CommandRegistry registry){
-		registry.register("dictionary", new SimpleCommand(Category.UTILS) {
-			@Override
-			protected void call(GuildMessageReceivedEvent event, String content, String[] args) {
-				if(args.length == 0){
-					event.getChannel().sendMessage(EmoteReference.ERROR + "You need to specify a word.").queue();
-					return;
-				}
-
-
-				String word = content;
-
-				JSONObject main;
-				String definition, part_of_speech, headword, example;
-
-				try{
-					main = Unirest.get("http://api.pearson.com/v2/dictionaries/laes/entries?headword=" + word).asJson().getBody().getObject();
-					JSONArray results = main.getJSONArray("results");
-					JSONObject result = results.getJSONObject(0);
-					JSONArray senses = result.getJSONArray("senses");
-
-					headword = result.getString("headword");
-
-					if(result.has("part_of_speech")) part_of_speech = result.getString("part_of_speech");
-					else part_of_speech = "Not found.";
-
-					if(senses.getJSONObject(0).get("definition") instanceof JSONArray)
-						definition = senses.getJSONObject(0).getJSONArray("definition").getString(0);
-					else
-						definition = senses.getJSONObject(0).getString("definition");
-
-					try{
-						if(senses.getJSONObject(0).getJSONArray("translations").getJSONObject(0).get("example") instanceof JSONArray){
-							example = senses.getJSONObject(0)
-									.getJSONArray("translations")
-									.getJSONObject(0)
-									.getJSONArray("example")
-									.getJSONObject(0)
-									.getString("text");
-						} else {
-							example = senses.getJSONObject(0)
-									.getJSONArray("translations")
-									.getJSONObject(0)
-									.getJSONObject("example")
-									.getString("text");
-						}
-					} catch (Exception e){
-						example = "Not found";
-					}
-
-
-				} catch (Exception e){
-					event.getChannel().sendMessage(EmoteReference.ERROR + "No results.").queue();
-					return;
-				}
-
-				EmbedBuilder eb = new EmbedBuilder();
-				eb.setAuthor("Definition for " + word, null, event.getAuthor().getAvatarUrl())
-						.setThumbnail("https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Wikt_dynamic_dictionary_logo.svg/1000px-Wikt_dynamic_dictionary_logo.svg.png")
-						.addField("Definition", "**" +  definition + "**", false)
- 						.addField("Example", "**" +  example + "**", false)
-						.setDescription(String.format("**Part of speech:** `%s`\n" + "**Headword:** `%s`\n", part_of_speech, headword));
-
-				event.getChannel().sendMessage(eb.build()).queue();
-			}
-
-			@Override
-			public MessageEmbed help(GuildMessageReceivedEvent event) {
-				return helpEmbed(event, "Dictionary command")
-						.setDescription("**Looks up a word in the dictionary.**")
-						.addField("Usage", "`~>dictionary <word>` - Searches a word in the dictionary.", false)
-						.addField("Parameters", "`word` - The word to look for", false)
-						.build();
 			}
 		});
 	}

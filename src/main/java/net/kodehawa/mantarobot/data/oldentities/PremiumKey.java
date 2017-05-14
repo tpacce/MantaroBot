@@ -1,4 +1,4 @@
-package net.kodehawa.mantarobot.data.entities;
+package net.kodehawa.mantarobot.data.oldentities;
 
 import lombok.Getter;
 import net.kodehawa.mantarobot.data.db.ManagedObject;

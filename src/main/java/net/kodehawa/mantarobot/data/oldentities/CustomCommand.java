@@ -1,4 +1,4 @@
-package net.kodehawa.mantarobot.data.entities;
+package net.kodehawa.mantarobot.data.oldentities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;

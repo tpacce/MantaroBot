@@ -10,8 +10,8 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.kodehawa.mantarobot.commands.anime.AnimeData;
 import net.kodehawa.mantarobot.commands.anime.CharacterData;
 import net.kodehawa.mantarobot.data.MantaroData;
-import net.kodehawa.mantarobot.modules.CommandRegistry;
 import net.kodehawa.mantarobot.modules.Command;
+import net.kodehawa.mantarobot.modules.CommandRegistry;
 import net.kodehawa.mantarobot.modules.Module;
 import net.kodehawa.mantarobot.modules.commands.SimpleCommand;
 import net.kodehawa.mantarobot.modules.commands.base.Category;
@@ -47,7 +47,8 @@ public class AnimeCmds {
 					}
 
 					DiscordUtils.selectList(event, type, anime -> String.format("**[%s (%s)](%s)**",
-						anime.getTitle_english(), anime.getTitle_japanese(), "http://anilist.co/anime/" + anime.getId()),
+						anime.title_english, anime.title_japanese, "http://anilist.co/anime/" + anime.id
+						),
 						s -> baseEmbed(event, "Type the number of the anime you want to select.")
 								.setDescription(s)
 								.setThumbnail("https://anilist.co/img/logo_al.png")
@@ -155,22 +156,22 @@ public class AnimeCmds {
 	}
 
 	private static void animeData(GuildMessageReceivedEvent event, AnimeData type) {
-		String ANIME_TITLE = type.getTitle_english();
-		String RELEASE_DATE = StringUtils.substringBefore(type.getStart_date(), "T");
-		String END_DATE = StringUtils.substringBefore(type.getEnd_date(), "T");
-		String ANIME_DESCRIPTION = type.getDescription().replaceAll("<br>", "\n");
-		String AVERAGE_SCORE = type.getAverage_score();
-		String IMAGE_URL = type.getImage_url_lge();
-		String TYPE = Utils.capitalize(type.getSeries_type());
-		String EPISODES = type.getTotal_episodes().toString();
-		String DURATION = type.getDuration().toString();
-		String GENRES = type.getGenres().stream().collect(Collectors.joining(", "));
+		String ANIME_TITLE = type.title_english;
+		String RELEASE_DATE = StringUtils.substringBefore(type.start_date, "T");
+		String END_DATE = StringUtils.substringBefore(type.end_date, "T");
+		String ANIME_DESCRIPTION = type.description.replaceAll("<br>", "\n");
+		String AVERAGE_SCORE = type.average_score;
+		String IMAGE_URL = type.image_url_lge;
+		String TYPE = Utils.capitalize(type.series_type);
+		String EPISODES = type.total_episodes.toString();
+		String DURATION = type.duration.toString();
+		String GENRES = type.genres.stream().collect(Collectors.joining(", "));
 
 		//Start building the embedded message.
 		EmbedBuilder embed = new EmbedBuilder();
 		embed.setColor(Color.LIGHT_GRAY)
 			.setAuthor("Anime information for " + ANIME_TITLE, "http://anilist.co/anime/"
-				+ type.getId(), type.getImage_url_sml())
+				+ type.id, type.image_url_sml)
 			.setFooter("Information provided by AniList", null)
 			.setThumbnail(IMAGE_URL)
 			.addField("Description: ", ANIME_DESCRIPTION.length() <= 1024 ? ANIME_DESCRIPTION : ANIME_DESCRIPTION.substring(0, 1020) + "...", false)

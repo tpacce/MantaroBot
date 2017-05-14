@@ -11,7 +11,7 @@ import net.kodehawa.mantarobot.commands.game.core.GameLobby;
 import net.kodehawa.mantarobot.commands.game.core.ImageGame;
 import net.kodehawa.mantarobot.core.listeners.operations.InteractiveOperation;
 import net.kodehawa.mantarobot.core.listeners.operations.InteractiveOperations;
-import net.kodehawa.mantarobot.data.entities.Player;
+import net.kodehawa.mantarobot.data.oldentities.Player;
 import net.kodehawa.mantarobot.utils.Utils;
 import net.kodehawa.mantarobot.utils.commands.EmoteReference;
 import net.kodehawa.mantarobot.utils.data.DataManager;

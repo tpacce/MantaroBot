@@ -15,7 +15,7 @@ import net.dv8tion.jda.core.hooks.EventListener;
 import net.kodehawa.mantarobot.core.CommandProcessor;
 import net.kodehawa.mantarobot.core.ShardMonitorEvent;
 import net.kodehawa.mantarobot.data.MantaroData;
-import net.kodehawa.mantarobot.data.entities.Player;
+import net.kodehawa.mantarobot.data.oldentities.Player;
 import net.kodehawa.mantarobot.utils.Snow64;
 import net.kodehawa.mantarobot.utils.commands.EmoteReference;
 

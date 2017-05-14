@@ -9,11 +9,9 @@ import net.kodehawa.mantarobot.MantaroBot;
 import net.kodehawa.mantarobot.commands.currency.TextChannelGround;
 import net.kodehawa.mantarobot.commands.moderation.ModLog;
 import net.kodehawa.mantarobot.data.MantaroData;
-import net.kodehawa.mantarobot.data.db.ManagedDatabase;
-import net.kodehawa.mantarobot.data.entities.DBGuild;
-import net.kodehawa.mantarobot.data.entities.helpers.GuildData;
-import net.kodehawa.mantarobot.modules.CommandRegistry;
+import net.kodehawa.mantarobot.data.oldentities.DBGuild;
 import net.kodehawa.mantarobot.modules.Command;
+import net.kodehawa.mantarobot.modules.CommandRegistry;
 import net.kodehawa.mantarobot.modules.Module;
 import net.kodehawa.mantarobot.modules.commands.CommandPermission;
 import net.kodehawa.mantarobot.modules.commands.SimpleCommand;
@@ -32,127 +30,9 @@ import java.util.stream.Collectors;
 @Slf4j(topic = "Moderation")
 @Module
 public class ModerationCmds {
-    private static final Pattern pattern = Pattern.compile("\\d+?[a-zA-Z]");
     public static final Pattern DISCORD_INVITE = Pattern.compile("(?:discord(?:(?:\\.|.?dot.?)gg|app(?:\\.|.?dot.?)com/invite)/(?<id>" +
             "([\\w]{10,16}|[a-zA-Z0-9]{4,8})))");
-
-    @Command
-    public static void softban(CommandRegistry cr) {
-        cr.register("softban", new SimpleCommand(Category.MODERATION) {
-            @Override
-            protected void call(GuildMessageReceivedEvent event, String content, String[] args) {
-                Guild guild = event.getGuild();
-                User author = event.getAuthor();
-                TextChannel channel = event.getChannel();
-                Message receivedMessage = event.getMessage();
-                String reason = content;
-
-                if (!guild.getMember(author).hasPermission(Permission.BAN_MEMBERS)) {
-                    channel.sendMessage(EmoteReference.ERROR2 + "Cannot softban: You don't have the Ban Members permission.").queue();
-                    return;
-                }
-
-                if (receivedMessage.getMentionedUsers().isEmpty()) {
-                    channel.sendMessage(EmoteReference.ERROR + "You must mention 1 or more users to be softbanned!").queue();
-                    return;
-                }
-
-                Member selfMember = guild.getSelfMember();
-
-                if (!selfMember.hasPermission(Permission.BAN_MEMBERS)) {
-                    channel.sendMessage(EmoteReference.ERROR2 + "Sorry! I don't have permission to ban members in this server!").queue();
-                    return;
-                }
-
-                for (User user : event.getMessage().getMentionedUsers()) {
-                    reason = reason.replaceAll("(\\s+)?<@!?" + user.getId() + ">(\\s+)?", "");
-                }
-
-                if (reason.isEmpty()) {
-                    reason = "Not specified";
-                }
-
-                final String finalReason = reason;
-
-                receivedMessage.getMentionedUsers().forEach(user -> {
-                    if (!event.getGuild().getMember(event.getAuthor()).canInteract(event.getGuild().getMember(user))) {
-                        event.getChannel().sendMessage(EmoteReference.ERROR + "You cannot softban an user in a higher hierarchy than you")
-                                .queue();
-                        return;
-                    }
-
-                    if (event.getAuthor().getId().equals(user.getId())) {
-                        event.getChannel().sendMessage(EmoteReference.ERROR + "Why are you trying to softban yourself?").queue();
-                        return;
-                    }
-
-                    Member member = guild.getMember(user);
-                    if (member == null) return;
-
-                    //If one of them is in a higher hierarchy than the bot, cannot kick.
-                    if (!selfMember.canInteract(member)) {
-                        channel.sendMessage(EmoteReference.ERROR2 + "Cannot softban member: " + member.getEffectiveName() + ", they are " +
-                                "higher or the same " + "hierachy than I am!").queue();
-                        return;
-                    }
-                    final DBGuild db = MantaroData.db().getGuild(event.getGuild());
-
-                    //Proceed to kick them. Again, using queue so I don't get rate limited.
-                    guild.getController().ban(member, 7).queue(
-                            success -> {
-                                user.openPrivateChannel().complete().sendMessage(EmoteReference.MEGA + "You were **softbanned** by " + event
-                                        .getAuthor().getName() + "#"
-                                        + event.getAuthor().getDiscriminator() + " for reason " + finalReason + ".").queue();
-                                db.getData().setCases(db.getData().getCases() + 1);
-                                db.saveAsync();
-                                channel.sendMessage(EmoteReference.ZAP + "You'll be missed... haha just kidding " + member.getEffectiveName())
-                                        .queue(); //Quite funny, I think.
-                                guild.getController().unban(member.getUser()).queue(aVoid -> {}, error -> {
-                                    if (error instanceof PermissionException) {
-                                        channel.sendMessage(String.format(EmoteReference.ERROR + "Error unbanning [%s]: (No permission " +
-                                                "provided: %s)", member.getEffectiveName(), ((PermissionException) error).getPermission()))
-                                                .queue();
-                                    }
-                                    else {
-                                        channel.sendMessage(String.format(EmoteReference.ERROR + "Unknown error while unbanning [%s]: <%s>: " +
-                                                "%s", member.getEffectiveName(), error.getClass().getSimpleName(), error.getMessage()))
-                                                .queue();
-                                        log.warn("Unexpected error while unbanning someone.", error);
-                                    }
-                                });
-
-
-                                ModLog.log(event.getMember(), user, finalReason, ModLog.ModAction.KICK, db.getData().getCases());
-                                TextChannelGround.of(event).dropItemWithChance(2, 2);
-                            },
-                            error -> {
-                                if (error instanceof PermissionException) {
-                                    channel.sendMessage(String.format(EmoteReference.ERROR + "Error softbanning [%s]: (No permission " +
-                                            "provided: %s)", member.getEffectiveName(), ((PermissionException) error).getPermission()))
-                                            .queue();
-                                }
-                                else {
-                                    channel.sendMessage(String.format(EmoteReference.ERROR + "Unknown error while softbanning [%s]: <%s>: " +
-                                            "%s", member.getEffectiveName(), error.getClass().getSimpleName(), error.getMessage()))
-                                            .queue();
-                                    log.warn("Unexpected error while softbanning someone.", error);
-                                }
-                            });
-                });
-            }
-
-            @Override
-            public MessageEmbed help(GuildMessageReceivedEvent event) {
-                return helpEmbed(event, "Softban")
-                        .setDescription("**Softban the mentioned user and clears their messages from the past week. (You need Ban " +
-                                "Members)**")
-                        .addField("Summarizing", "A softban is a ban & instant unban, normally used to clear " +
-                                "the user's messages but **without banning the person permanently**.", false)
-                        .build();
-            }
-
-        });
-    }
+	private static final Pattern pattern = Pattern.compile("\\d+?[a-zA-Z]");
 
     @Command
     public static void ban(CommandRegistry cr) {
@@ -351,6 +231,86 @@ public class ModerationCmds {
         });
     }
 
+	@Command
+	public static void mute(CommandRegistry registry) {
+		registry.register("mute", new SimpleCommand(Category.MODERATION, CommandPermission.ADMIN) {
+			@Override
+			protected void call(GuildMessageReceivedEvent event, String content, String[] args) {
+				ManagedDatabase db = MantaroData.db();
+				DBGuild dbGuild = db.getGuild(event.getGuild());
+				GuildData guildData = dbGuild.getData();
+				String reason = "Not specified";
+
+				if (guildData.getMutedRole() == null) {
+					event.getChannel().sendMessage(
+						EmoteReference.ERROR + "The mute role is not set in this server, you can set it by doing `~>opts muterole set <role>`")
+						.queue();
+					return;
+				}
+
+				Role mutedRole = event.getGuild().getRoleById(guildData.getMutedRole());
+
+				if (args.length > 1) {
+					reason = StringUtils.splitArgs(content, 2)[1];
+				}
+
+				if (event.getMessage().getMentionedUsers().isEmpty()) {
+					event.getChannel().sendMessage(
+						EmoteReference.ERROR + "You need to mention at least one user to mute.").queue();
+					return;
+				}
+
+				if (!event.getGuild().getSelfMember().hasPermission(event.getChannel(), Permission.MANAGE_ROLES)) {
+					event.getChannel().sendMessage(
+						EmoteReference.ERROR + "I don't have permissions to administrate roles on this server!")
+						.queue();
+					return;
+				}
+
+				final String finalReason = reason;
+
+				event.getMessage().getMentionedUsers().forEach(user -> {
+					Member m = event.getGuild().getMember(user);
+					if (!event.getGuild().getSelfMember().canInteract(m)) {
+						event.getChannel().sendMessage(
+							EmoteReference.ERROR + "I cannot assign or remove a mute role to this user because they're in a higher hierarchy than me, or the role is in a higher hierarchy!")
+							.queue();
+						return;
+					}
+
+					if (m.getRoles().contains(mutedRole)) {
+						event.getGuild().getController().removeRolesFromMember(m, mutedRole).queue();
+						event.getChannel().sendMessage(
+							EmoteReference.ERROR + "Removed mute role from **" + m.getEffectiveName() + "**").queue();
+						ModLog.log(event.getMember(), user, finalReason, ModLog.ModAction.UNMUTE, db.getGuild(
+							event.getGuild()).getData().getCases());
+						return;
+					}
+
+					event.getGuild().getController().addRolesToMember(m, mutedRole).queue();
+					event.getChannel().sendMessage(
+						EmoteReference.ERROR + "Added mute role to **" + m.getEffectiveName() + "**").queue();
+					ModLog.log(event.getMember(), user, finalReason, ModLog.ModAction.MUTE, db.getGuild(
+						event.getGuild()).getData().getCases());
+				});
+			}
+
+			@Override
+			public MessageEmbed help(GuildMessageReceivedEvent event) {
+				return helpEmbed(event, "Mute")
+					.setDescription("**Mutes or unmutes the specified users**")
+					.addField("Usage", "`~>mute <users>` - Mutes or unmutes the specified users.", false)
+					.addField("Parameters", "`users` - The users to mute. Needs to be mentions.", false)
+					.addField(
+						"Considerations",
+						"This command will mute if the user doesn't have the mute role and it will unmute the user if he or she has the role.",
+						false
+					)
+					.build();
+			}
+		});
+	}
+
     @Command
     public static void prune(CommandRegistry cr) {
         cr.register("prune", new SimpleCommand(Category.MODERATION) {
@@ -481,6 +441,146 @@ public class ModerationCmds {
         });
     }
 
+	@Command
+	public static void softban(CommandRegistry cr) {
+		cr.register("softban", new SimpleCommand(Category.MODERATION) {
+			@Override
+			protected void call(GuildMessageReceivedEvent event, String content, String[] args) {
+				Guild guild = event.getGuild();
+				User author = event.getAuthor();
+				TextChannel channel = event.getChannel();
+				Message receivedMessage = event.getMessage();
+				String reason = content;
+
+				if (!guild.getMember(author).hasPermission(Permission.BAN_MEMBERS)) {
+					channel.sendMessage(
+						EmoteReference.ERROR2 + "Cannot softban: You don't have the Ban Members permission.").queue();
+					return;
+				}
+
+				if (receivedMessage.getMentionedUsers().isEmpty()) {
+					channel.sendMessage(EmoteReference.ERROR + "You must mention 1 or more users to be softbanned!")
+						.queue();
+					return;
+				}
+
+				Member selfMember = guild.getSelfMember();
+
+				if (!selfMember.hasPermission(Permission.BAN_MEMBERS)) {
+					channel.sendMessage(
+						EmoteReference.ERROR2 + "Sorry! I don't have permission to ban members in this server!")
+						.queue();
+					return;
+				}
+
+				for (User user : event.getMessage().getMentionedUsers()) {
+					reason = reason.replaceAll("(\\s+)?<@!?" + user.getId() + ">(\\s+)?", "");
+				}
+
+				if (reason.isEmpty()) {
+					reason = "Not specified";
+				}
+
+				final String finalReason = reason;
+
+				receivedMessage.getMentionedUsers().forEach(user -> {
+					if (!event.getGuild().getMember(event.getAuthor()).canInteract(event.getGuild().getMember(user))) {
+						event.getChannel().sendMessage(
+							EmoteReference.ERROR + "You cannot softban an user in a higher hierarchy than you")
+							.queue();
+						return;
+					}
+
+					if (event.getAuthor().getId().equals(user.getId())) {
+						event.getChannel().sendMessage(EmoteReference.ERROR + "Why are you trying to softban yourself?")
+							.queue();
+						return;
+					}
+
+					Member member = guild.getMember(user);
+					if (member == null) return;
+
+					//If one of them is in a higher hierarchy than the bot, cannot kick.
+					if (!selfMember.canInteract(member)) {
+						channel.sendMessage(EmoteReference.ERROR2 + "Cannot softban member: " + member
+							.getEffectiveName() + ", they are " +
+							"higher or the same " + "hierachy than I am!").queue();
+						return;
+					}
+					final DBGuild db = MantaroData.db().getGuild(event.getGuild());
+
+					//Proceed to kick them. Again, using queue so I don't get rate limited.
+					guild.getController().ban(member, 7).queue(
+						success -> {
+							user.openPrivateChannel().complete().sendMessage(
+								EmoteReference.MEGA + "You were **softbanned** by " + event
+									.getAuthor().getName() + "#"
+									+ event.getAuthor().getDiscriminator() + " for reason " + finalReason + ".")
+								.queue();
+							db.getData().setCases(db.getData().getCases() + 1);
+							db.saveAsync();
+							channel.sendMessage(EmoteReference.ZAP + "You'll be missed... haha just kidding " + member
+								.getEffectiveName())
+								.queue(); //Quite funny, I think.
+							guild.getController().unban(member.getUser()).queue(aVoid -> {}, error -> {
+								if (error instanceof PermissionException) {
+									channel.sendMessage(String.format(
+										EmoteReference.ERROR + "Error unbanning [%s]: (No permission " +
+											"provided: %s)", member.getEffectiveName(),
+										((PermissionException) error).getPermission()
+									))
+										.queue();
+								} else {
+									channel.sendMessage(String.format(
+										EmoteReference.ERROR + "Unknown error while unbanning [%s]: <%s>: " +
+											"%s", member.getEffectiveName(), error.getClass().getSimpleName(),
+										error.getMessage()
+									))
+										.queue();
+									log.warn("Unexpected error while unbanning someone.", error);
+								}
+							});
+
+							ModLog.log(
+								event.getMember(), user, finalReason, ModLog.ModAction.KICK, db.getData().getCases());
+							TextChannelGround.of(event).dropItemWithChance(2, 2);
+						},
+						error -> {
+							if (error instanceof PermissionException) {
+								channel.sendMessage(String.format(
+									EmoteReference.ERROR + "Error softbanning [%s]: (No permission " +
+										"provided: %s)", member.getEffectiveName(),
+									((PermissionException) error).getPermission()
+								))
+									.queue();
+							} else {
+								channel.sendMessage(String.format(
+									EmoteReference.ERROR + "Unknown error while softbanning [%s]: <%s>: " +
+										"%s", member.getEffectiveName(), error.getClass().getSimpleName(),
+									error.getMessage()
+								))
+									.queue();
+								log.warn("Unexpected error while softbanning someone.", error);
+							}
+						}
+					);
+				});
+			}
+
+			@Override
+			public MessageEmbed help(GuildMessageReceivedEvent event) {
+				return helpEmbed(event, "Softban")
+					.setDescription(
+						"**Softban the mentioned user and clears their messages from the past week. (You need Ban " +
+							"Members)**")
+					.addField("Summarizing", "A softban is a ban & instant unban, normally used to clear " +
+						"the user's messages but **without banning the person permanently**.", false)
+					.build();
+			}
+
+		});
+	}
+
     @Command
     public static void tempban(CommandRegistry cr) {
         cr.register("tempban", new SimpleCommand(Category.MODERATION) {
@@ -552,71 +652,6 @@ public class ModerationCmds {
                         .addField("Example", "`~>tempban @Kodehawa example time:1d`", false)
                         .addField("Extended usage", "`time` - can be used with the following parameters: " +
                                 "d (days), s (second), m (minutes), h (hour). **For example time:1d1h will give a day and an hour.**", false)
-                        .build();
-            }
-        });
-    }
-
-    @Command
-    public static void mute(CommandRegistry registry){
-        registry.register("mute", new SimpleCommand(Category.MODERATION, CommandPermission.ADMIN) {
-            @Override
-            protected void call(GuildMessageReceivedEvent event, String content, String[] args) {
-                ManagedDatabase db = MantaroData.db();
-                DBGuild dbGuild = db.getGuild(event.getGuild());
-                GuildData guildData = dbGuild.getData();
-                String reason = "Not specified";
-
-                if(guildData.getMutedRole() == null) {
-                    event.getChannel().sendMessage(EmoteReference.ERROR + "The mute role is not set in this server, you can set it by doing `~>opts muterole set <role>`").queue();
-                    return;
-                }
-
-                Role mutedRole = event.getGuild().getRoleById(guildData.getMutedRole());
-
-                if(args.length > 1){
-                    reason = StringUtils.splitArgs(content, 2)[1];
-                }
-
-                if(event.getMessage().getMentionedUsers().isEmpty()){
-                    event.getChannel().sendMessage(EmoteReference.ERROR + "You need to mention at least one user to mute.").queue();
-                    return;
-                }
-
-                if(!event.getGuild().getSelfMember().hasPermission(event.getChannel(), Permission.MANAGE_ROLES)){
-                    event.getChannel().sendMessage(EmoteReference.ERROR + "I don't have permissions to administrate roles on this server!").queue();
-                    return;
-                }
-
-                final String finalReason = reason;
-
-                event.getMessage().getMentionedUsers().forEach(user -> {
-                    Member m = event.getGuild().getMember(user);
-                    if(!event.getGuild().getSelfMember().canInteract(m)){
-                        event.getChannel().sendMessage(EmoteReference.ERROR + "I cannot assign or remove a mute role to this user because they're in a higher hierarchy than me, or the role is in a higher hierarchy!").queue();
-                        return;
-                    }
-
-                    if(m.getRoles().contains(mutedRole)){
-                        event.getGuild().getController().removeRolesFromMember(m, mutedRole).queue();
-                        event.getChannel().sendMessage(EmoteReference.ERROR + "Removed mute role from **" + m.getEffectiveName() + "**").queue();
-                        ModLog.log(event.getMember(), user, finalReason, ModLog.ModAction.UNMUTE, db.getGuild(event.getGuild()).getData().getCases());
-                        return;
-                    }
-
-                    event.getGuild().getController().addRolesToMember(m, mutedRole).queue();
-                    event.getChannel().sendMessage(EmoteReference.ERROR + "Added mute role to **" + m.getEffectiveName() + "**").queue();
-                    ModLog.log(event.getMember(), user, finalReason, ModLog.ModAction.MUTE, db.getGuild(event.getGuild()).getData().getCases());
-                });
-            }
-
-            @Override
-            public MessageEmbed help(GuildMessageReceivedEvent event) {
-                return helpEmbed(event, "Mute")
-                        .setDescription("**Mutes or unmutes the specified users**")
-                        .addField("Usage", "`~>mute <users>` - Mutes or unmutes the specified users.", false)
-                        .addField("Parameters", "`users` - The users to mute. Needs to be mentions.", false)
-                        .addField("Considerations", "This command will mute if the user doesn't have the mute role and it will unmute the user if he or she has the role.", false)
                         .build();
             }
         });

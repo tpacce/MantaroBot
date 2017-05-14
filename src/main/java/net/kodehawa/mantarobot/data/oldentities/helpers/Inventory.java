@@ -1,4 +1,4 @@
-package net.kodehawa.mantarobot.data.entities.helpers;
+package net.kodehawa.mantarobot.data.oldentities.helpers;
 
 import net.kodehawa.mantarobot.commands.currency.item.Item;
 import net.kodehawa.mantarobot.commands.currency.item.ItemStack;
@@ -7,8 +7,8 @@ import net.kodehawa.mantarobot.commands.currency.item.Items;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static net.kodehawa.mantarobot.data.entities.helpers.Inventory.Resolver.serialize;
-import static net.kodehawa.mantarobot.data.entities.helpers.Inventory.Resolver.unserialize;
+import static net.kodehawa.mantarobot.data.oldentities.helpers.Inventory.Resolver.serialize;
+import static net.kodehawa.mantarobot.data.oldentities.helpers.Inventory.Resolver.unserialize;
 
 public class Inventory {
 	public static class Resolver {
@@ -47,16 +47,16 @@ public class Inventory {
 		return asMap().containsKey(item);
 	}
 
+	public int getAmount(Item item) {
+		return asMap().getOrDefault(item, new ItemStack(item, 0)).getAmount();
+	}
+
 	public ItemStack getStackOf(Item item) {
 		if(containsItem(item)){
 			return asMap().get(item);
 		} else {
 			return null;
 		}
-	}
-
-	public int getAmount(Item item) {
-		return asMap().getOrDefault(item, new ItemStack(item, 0)).getAmount();
 	}
 
 	public void merge(List<ItemStack> inv) {
