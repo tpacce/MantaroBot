@@ -9,6 +9,7 @@ import lombok.experimental.Delegate;
 import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.JDABuilder;
+import net.dv8tion.jda.core.OnlineStatus;
 import net.dv8tion.jda.core.entities.Game;
 import net.dv8tion.jda.core.exceptions.RateLimitedException;
 import net.kodehawa.mantarobot.core.MantaroEventManager;
@@ -185,6 +186,7 @@ public class MantaroShard implements JDA {
 				.replace("%prettyguildcount%", pretty(guilds.get()));
 
 			getJDA().getPresence().setGame(Game.of(config().get().prefix[0] + "help | " + newStatus + " | [" + getId() + "]"));
+			getJDA().getPresence().setStatus(OnlineStatus.DO_NOT_DISTURB);
 			log.debug("Changed status to: " + newStatus);
 		};
 
