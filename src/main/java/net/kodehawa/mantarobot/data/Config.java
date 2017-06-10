@@ -33,6 +33,8 @@ public class Config {
 	public String remoteNode;
 	public int shardWatcherTimeout = 1500; //wait 1500ms for the handlers to run
 	public int shardWatcherWait = 600000; //run once every 600 seconds (10 minutes)
+	public String sqlHost;
+	public String sqlUser;
 	public String sqlPassword;
 	public String token;
 	public String weatherAppId;

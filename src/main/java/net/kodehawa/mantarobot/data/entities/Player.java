@@ -33,7 +33,7 @@ public class  Player implements ManagedObject {
 	}
 
 	public static Player of(String userId) {
-		return new Player(userId + ":g", 0L, 0L, 0L, new HashMap<>(), new PlayerData());
+		return new Player(userId + ":g", 0L, 0L, 0L, new HashMap<>(), new PlayerData(), false);
 	}
 
 	@Getter
@@ -48,15 +48,19 @@ public class  Player implements ManagedObject {
 	@Getter
 	@Setter
 	private Long reputation = null;
+	@Getter
+	@Setter
+	private Boolean nsfw = false;
 
-	@ConstructorProperties({"id", "level", "money", "reputation", "inventory", "data"})
-	public Player(String id, Long level, Long money, Long reputation, Map<Integer, Integer> inventory, PlayerData data) {
+	@ConstructorProperties({"id", "level", "money", "reputation", "inventory", "data", "nsfw"})
+	public Player(String id, Long level, Long money, Long reputation, Map<Integer, Integer> inventory, PlayerData data, Boolean nsfw) {
 		this.id = id;
 		this.level = level == null ? 0 : level;
 		this.money = money == null ? 0 : money;
 		this.reputation = reputation == null ? 0 : reputation;
 		this.data = data;
 		this.inventory.replaceWith(unserialize(inventory));
+		this.nsfw = nsfw;
 	}
 
 	@Override

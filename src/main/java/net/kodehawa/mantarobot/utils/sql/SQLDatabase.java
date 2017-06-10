@@ -25,9 +25,9 @@ public class SQLDatabase {
 	    if(DISABLED) return;
 		dataSource = new MysqlDataSource();
 		dataSource.setDatabaseName("mantarologs");
-		dataSource.setUser("root");
+		dataSource.setUser(MantaroData.config().get().getSqlUser());
 		dataSource.setPassword(MantaroData.config().get().getSqlPassword());
-		dataSource.setServerName("localhost");
+		dataSource.setServerName(MantaroData.config().get().getSqlHost());
 		dataSource.setURL(dataSource.getURL() + "?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&autoReconnect=true&useSSL=false");
 	}
 
