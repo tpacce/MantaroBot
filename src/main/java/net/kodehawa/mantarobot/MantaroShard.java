@@ -21,14 +21,21 @@ import net.kodehawa.mantarobot.data.Config;
 import net.kodehawa.mantarobot.services.Carbonitex;
 import net.kodehawa.mantarobot.utils.data.DataManager;
 import net.kodehawa.mantarobot.utils.data.SimpleFileDataManager;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.login.LoginException;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -185,12 +192,23 @@ public class MantaroShard implements JDA {
 				.replace("%prettyusercount%", pretty(users.get()))
 				.replace("%prettyguildcount%", pretty(guilds.get()));
 
-			getJDA().getPresence().setGame(Game.of(config().get().prefix[0] + "help | " + newStatus + " | [" + getId() + "]"));
-			getJDA().getPresence().setStatus(OnlineStatus.DO_NOT_DISTURB);
+			getJDA().getPresence().setGame(Game.of(config().get().prefix[0] + "help | " + newStatus + " | [" + getId() + "]", "https://www.twitch.tv/stickyhamster"));
 			log.debug("Changed status to: " + newStatus);
 		};
 
 		changeStatus.run();
 		Async.task("Splash Thread", changeStatus, 600, TimeUnit.SECONDS);
+
+		final int INBA_HOUR = 22;
+		final int INBA_MINUTE = 37;
+		Runnable checkTime = () -> {
+			DateTime dateTimeUtc = DateTime.now(DateTimeZone.forTimeZone(TimeZone.getTimeZone("Europe/Warsaw")));
+
+			if (dateTimeUtc.hourOfDay().get() == INBA_HOUR && dateTimeUtc.minuteOfHour().get() == INBA_MINUTE)
+			Arrays.stream(MantaroBot.getInstance().getShards()).map(MantaroShard::getJDA).forEach(jda -> {
+				jda.getGuilds().forEach(guild -> guild.getTextChannels().get(0).sendMessage("INBA KUR*A MAĆ!!!").queue());
+			});
+		};
+		Async.task("Inba Time", checkTime, 10, TimeUnit.SECONDS);
 	}
 }

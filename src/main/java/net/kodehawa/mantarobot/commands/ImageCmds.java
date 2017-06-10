@@ -140,7 +140,7 @@ public class ImageCmds {
 
 				channel.sendTyping().queue();
 				String tags = content.toLowerCase().trim().replace(" ", "+");
-				e621.onSearch(r.nextInt(50), 60, tags, (wallpaper) -> {
+				e621.onSearch(60, tags, (wallpaper) -> {
 					if (wallpaper == null) {
 						event.getChannel().sendMessage(EmoteReference.ERROR + "**No results found**! Try with a fewer tags.").queue();
 						return;
@@ -196,7 +196,7 @@ public class ImageCmds {
 
 				channel.sendTyping().queue();
 				String tags = content.toLowerCase().trim().replace(" ", "+");
-				konachan.onSearch(nsfw, r.nextInt(50), 60, tags, (wallpaper) -> {
+				konachan.onSearch(nsfw, 60, tags, (wallpaper) -> {
 					if (wallpaper == null) {
 						if (!nsfw) {
 							event.getChannel().sendMessage(EmoteReference.ERROR + "**No results found**! Try with a fewer tags or remove NSFW tags.").queue();
@@ -433,7 +433,7 @@ public class ImageCmds {
 
 				channel.sendTyping().queue();
 				String tags = content.toLowerCase().trim().replace(" ", "+");
-				rule34.onSearch(r.nextInt(50), 60, tags, (wallpaper) -> {
+				rule34.onSearch(60, tags, (wallpaper) -> {
 					if (wallpaper == null) {
 						event.getChannel().sendMessage(EmoteReference.ERROR + "**No results found**! Try with a fewer tags.").queue();
 						return;
@@ -488,7 +488,7 @@ public class ImageCmds {
 
 				channel.sendTyping().queue();
 				String tags = content.toLowerCase().trim().replace(" ", "+");
-				yandere.onSearch(nsfw, r.nextInt(50), 60, tags, (wallpaper) -> {
+				yandere.onSearch(nsfw, 60, tags, (wallpaper) -> {
 					if (wallpaper == null) {
 						if (!nsfw) {
 							event.getChannel().sendMessage(EmoteReference.ERROR + "**No results found**! Try with a fewer tags or remove NSFW tags.").queue();

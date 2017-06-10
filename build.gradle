@@ -67,6 +67,8 @@ dependencies {
 	compile 'org.springframework.boot:spring-boot-starter-web:1.4.3.RELEASE'
 
     compile 'net.jodah:expiringmap:0.5.8'
+	
+    compile 'joda-time:joda-time:2.9.9'
 
     compile fileTree(dir: 'lib', include: '*.jar')
 

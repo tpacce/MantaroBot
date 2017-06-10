@@ -1,5 +1,6 @@
 package net.kodehawa.mantarobot.commands;
 
+import br.com.brjdevs.java.utils.async.Async;
 import br.com.brjdevs.java.utils.texts.StringUtils;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.User;
@@ -7,6 +8,8 @@ import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.kodehawa.mantarobot.MantaroBot;
 import net.kodehawa.mantarobot.commands.currency.TextChannelGround;
 import net.kodehawa.mantarobot.commands.currency.item.Items;
+import net.kodehawa.mantarobot.commands.music.AudioCmdUtils;
+import net.kodehawa.mantarobot.commands.utils.RemindMeData;
 import net.kodehawa.mantarobot.core.listeners.operations.InteractiveOperations;
 import net.kodehawa.mantarobot.data.MantaroData;
 import net.kodehawa.mantarobot.data.entities.Player;
@@ -17,16 +20,59 @@ import net.kodehawa.mantarobot.modules.commands.SimpleCommand;
 import net.kodehawa.mantarobot.modules.commands.base.Category;
 import net.kodehawa.mantarobot.utils.commands.EmoteReference;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Module
 public class FunCmds {
 
 	private static Random r = new Random();
+
+	private static List<RemindMeData> reminders = new ArrayList<RemindMeData>();
+
+	@Command
+	public static void remindme(CommandRegistry registry) {
+		registry.register("remindme", new SimpleCommand(Category.FUN) {
+			@Override
+			protected void call(GuildMessageReceivedEvent event, String content, String[] args) {
+				if (args.length < 2) {
+				    if (args.length == 1 && args[0].equalsIgnoreCase("remove")) {
+                        List<RemindMeData> userReminders = reminders.stream().filter(reminder -> reminder.getUser().getIdLong() == (event.getAuthor().getIdLong())).collect(Collectors.toList());
+                        if (userReminders.size() == 0) {
+                            event.getChannel().sendMessage("You don't have any reminders.").queue();
+                            return;
+                        }
+                        userReminders.forEach(remindMeData -> remindMeData.cancel());
+                        userReminders.forEach(remindMeData -> reminders.remove(remindMeData));
+                        event.getChannel().sendMessage("All your reminders were removed.").queue();
+                        return;
+                    }
+					onHelp(event);
+					return;
+				}
+
+				final long time = AudioCmdUtils.parseTime(args[0]);
+				final String about = content.replace(args[0] + " ", "");
+
+                reminders.add(new RemindMeData(event.getChannel(), event.getAuthor(), time, about));
+
+                event.getChannel().sendMessage("I will remind you with " + about + " in " + args[0]).queue();
+			}
+
+			@Override
+			public MessageEmbed help(GuildMessageReceivedEvent event) {
+				return helpEmbed(event, "RemindMe command")
+							   .setDescription(
+									   "Reminds you after x time about y\n" +
+									   "`~>remindme [time] [about]`: Reminds you after x about y."
+							   )
+							   .build();
+			}
+		});
+	}
 
 	@Command
 	public static void coinflip(CommandRegistry cr) {
@@ -255,7 +301,7 @@ public class FunCmds {
 
 				if (amount >= 100) amount = 100;
 				event.getChannel().sendMessage(
-					EmoteReference.DICE + "You got **" + diceRoll(size, amount) + "**" +
+						EmoteReference.DICE + "You got **" + diceRoll(size, amount) + "**" +
 						(amount == 1 ? "!" : (", doing **" + amount + "** rolls."))
 				).queue();
 			}
@@ -263,12 +309,12 @@ public class FunCmds {
 			@Override
 			public MessageEmbed help(GuildMessageReceivedEvent event) {
 				return helpEmbed(event, "Dice command")
-					.setDescription(
-						"Roll a any-sided dice a 1 or more times\n" +
-							"`~>roll [-amount <number>] [-size <number>]`: Rolls a dice of the specified size the specified times.\n" +
-							"(By default, this command will roll a 6-sized dice 1 time.)"
-					)
-					.build();
+							   .setDescription(
+									   "Roll a any-sided dice a 1 or more times\n" +
+									   "`~>roll [-amount <number>] [-size <number>]`: Rolls a dice of the specified size the specified times.\n" +
+									   "(By default, this command will roll a 6-sized dice 1 time.)"
+							   )
+							   .build();
 			}
 		});
 	}

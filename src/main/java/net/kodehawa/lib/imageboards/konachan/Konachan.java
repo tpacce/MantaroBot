@@ -30,7 +30,7 @@ public class Konachan {
 		queryParams = new HashMap<>();
 	}
 
-	private void get(boolean nsfw, final int page, final int limit, final String search, final WallpaperProvider provider) {
+	private void get(boolean nsfw, final int limit, final String search, final WallpaperProvider provider) {
 		Async.thread("Image fetch thread", () -> {
 			try {
 				if (provider == null) throw new IllegalStateException("Provider is null");
@@ -42,12 +42,12 @@ public class Konachan {
 				int maxPages;
 				try {
 					String url = nsfw ? NSFWURL : BASEURL;
-					String response = this.resty.text(url + "post.xml" + "?" + Utils.urlEncodeUTF8(this.queryParams).replace("%2B", "+")).toString();
+					String response = this.resty.text(url + "post.xml?" + Utils.urlEncodeUTF8(this.queryParams).replace("%2B", "+")).toString();
 					XMLStreamReader streamReader = inputFactory.createXMLStreamReader(new StringReader(response));
 					streamReader.nextTag();
 					try {
 						maxPages = Integer.parseInt(streamReader.getAttributeValue(0));
-						maxPages = maxPages / 60;
+						maxPages = maxPages / limit;
 					} catch (NumberFormatException e) {
 						maxPages = 0;
 					}
@@ -59,9 +59,7 @@ public class Konachan {
 				if (maxPages == 0) {
 					provider.onSuccess(null);
 				} else {
-					int page1 = maxPages;
-
-					Wallpaper wallpaper = this.get(nsfw, page1, limit, search, 1);
+					Wallpaper wallpaper = this.get(nsfw, maxPages, limit, search, 1);
 					Optional.ofNullable(search).ifPresent((s) -> {
 						provider.onSuccess(wallpaper);
 					});
@@ -71,12 +69,11 @@ public class Konachan {
 		});
 	}
 
-	private Wallpaper get(boolean nsfw, int page, int limit, String search, int tryNumber) {
+	private Wallpaper get(boolean nsfw, int maxPages, int limit, String search, int tryNumber) {
 		if (tryNumber >= 3) {
 			return null;
 		}
-		final int PAGE = page;
-		page = r.nextInt(page) + 1;
+		int page = r.nextInt(maxPages) + 1;
 
 		this.queryParams.put("limit", limit);
 		this.queryParams.put("page", page);
@@ -87,7 +84,7 @@ public class Konachan {
 		String response;
 		try {
 			String url = nsfw ? NSFWURL : BASEURL;
-			response = this.resty.text(url + "post.json" + "?" + Utils.urlEncodeUTF8(this.queryParams).replace("%2B", "+")).toString();
+			response = this.resty.text(url + "post.json?" + Utils.urlEncodeUTF8(this.queryParams).replace("%2B", "+")).toString();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
@@ -100,14 +97,14 @@ public class Konachan {
 																													wallpaper.getRating().equalsIgnoreCase("s"))
 		).collect(Collectors.toList());
 		if (wallpapers.isEmpty()) {
-			return get(nsfw, PAGE, limit, search, tryNumber + 1);
+			return get(nsfw, maxPages, limit, search, tryNumber + 1);
 		}
 
 		int number1 = r.nextInt(wallpapers.size() > 0 ? wallpapers.size() - 1 : wallpapers.size());
 		return wallpapers.get(number1);
 	}
 
-	public void onSearch(boolean nsfw, int page, int limit, String search, WallpaperProvider provider) {
-		this.get(nsfw, page, limit, search, provider);
+	public void onSearch(boolean nsfw, int limit, String search, WallpaperProvider provider) {
+		this.get(nsfw, limit, search, provider);
 	}
 }

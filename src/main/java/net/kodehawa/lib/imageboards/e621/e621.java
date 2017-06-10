@@ -31,7 +31,7 @@ public class e621 {
 		queryParams = new HashMap<>();
 	}
 
-	private void get(final int page, final int limit, final String search, final FurryProvider provider) {
+	private void get(final int limit, final String search, final FurryProvider provider) {
 		Async.thread("Image fetch thread", () -> {
 			try {
 				if (provider == null) throw new IllegalStateException("Provider is null");
@@ -42,12 +42,12 @@ public class e621 {
 				});
 				int maxPages;
 				try {
-					String response = this.resty.text(BASEURL + "index.xml" + "?" + Utils.urlEncodeUTF8(this.queryParams).replace("%2B", "+")).toString();
+					String response = this.resty.text(BASEURL + "index.xml?" + Utils.urlEncodeUTF8(this.queryParams).replace("%2B", "+")).toString();
 					XMLStreamReader streamReader = inputFactory.createXMLStreamReader(new StringReader(response));
 					streamReader.nextTag();
 					try {
 						maxPages = Integer.parseInt(streamReader.getAttributeValue(0));
-						maxPages = maxPages / 60;
+						maxPages = maxPages / limit;
 					} catch (NumberFormatException e) {
 						maxPages = 0;
 					}
@@ -59,9 +59,7 @@ public class e621 {
 				if (maxPages == 0) {
 					provider.onSuccess(null);
 				} else {
-					int page1 = maxPages;
-
-					Furry wallpaper = this.get(page1, limit, search, 1);
+					Furry wallpaper = this.get(maxPages, limit, search, 1);
 					Optional.ofNullable(search).ifPresent((s) -> {
 						provider.onSuccess(wallpaper);
 					});
@@ -71,12 +69,11 @@ public class e621 {
 		});
 	}
 
-	private Furry get(int page, int limit, String search, int tryNumber) {
+	private Furry get(int maxPages, int limit, String search, int tryNumber) {
 		if (tryNumber >= 3) {
 			return null;
 		}
-		final int PAGE = page;
-		page = r.nextInt(page) + 1;
+		int page = r.nextInt(maxPages) + 1;
 
 		this.queryParams.put("limit", limit);
 		this.queryParams.put("page", page);
@@ -86,7 +83,7 @@ public class e621 {
 
 		Furry[] wallpaperss;
 		try {
-			String response = this.resty.text(BASEURL + "index.json" + "?" + Utils.urlEncodeUTF8(this.queryParams).replace("%2B", "+")).toString();
+			String response = this.resty.text(BASEURL + "index.json?" + Utils.urlEncodeUTF8(this.queryParams).replace("%2B", "+")).toString();
 			wallpaperss = GsonDataManager.GSON_PRETTY.fromJson(response, Furry[].class);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -96,14 +93,14 @@ public class e621 {
 		}
 		List<Furry> wallpapers = Arrays.asList(wallpaperss);
 		if (wallpapers.isEmpty()) {
-			return get(PAGE, limit, search, tryNumber + 1);
+			return get(maxPages, limit, search, tryNumber + 1);
 		}
 
 		int number1 = r.nextInt(wallpapers.size() > 0 ? wallpapers.size() - 1 : wallpapers.size());
 		return wallpapers.get(number1);
 	}
 
-	public void onSearch(int page, int limit, String search, FurryProvider provider) {
-		this.get(page, limit, search, provider);
+	public void onSearch(int limit, String search, FurryProvider provider) {
+		this.get(limit, search, provider);
 	}
 }
